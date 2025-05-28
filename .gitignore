@@ -154,6 +154,8 @@ Plugins/**/Intermediate/*
 .rar
 .7zip
 .fbx
+.wav
+.psd
 
 # IDE additionally 
 *.idea*
