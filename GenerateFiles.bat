@@ -8,12 +8,12 @@ echo off
 set VersionSelector=U:\Epic Games\Launcher\Engine\Binaries\Win64\UnrealVersionSelector.exe
 
 :: впиши имя своего проекта
-set ProjectName=MacroTest.uproject
+set ProjectName=FpsShooter.uproject
 set ProjectPath=%CD%\%ProjectName%
 
 :: для выбора версии нужно указать адрес папки в которой установлен движок
 :: for UE 5
-set EnginePath=U:\UNREAL_ENGINE\UE_5.4
+set EnginePath=U:\UNREAL_ENGINE\UE_5.5
 set UBTRelativePatch=Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe
 
 :: for UE 4

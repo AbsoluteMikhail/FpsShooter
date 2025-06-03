@@ -150,12 +150,12 @@ Plugins/**/Intermediate/*
 .DS_Store
 
 # Защита от архивов которые пихают в ассет паки
-.zip
-.rar
-.7zip
-.fbx
-.wav
-.psd
+*.zip
+*.rar
+*.7zip
+*.fbx
+*.wav
+*.psd
 
 # IDE additionally 
 *.idea*
