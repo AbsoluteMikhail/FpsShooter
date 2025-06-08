@@ -6,6 +6,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/HealthComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 
@@ -36,13 +38,29 @@ AFpsPlayerCharacter::AFpsPlayerCharacter()
 	ThirdPersonMesh->SetupAttachment(GetRootComponent());
 	ThirdPersonMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	ThirdPersonMesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
 void AFpsPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AFpsPlayerCharacter, bIsCrouch);
+	//DOREPLIFETIME(AFpsPlayerCharacter, bIsCrouch);
+}
+
+void AFpsPlayerCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (HealthComponent)
+	{
+		OnTakeAnyDamage.AddDynamic(HealthComponent, &UHealthComponent::HandleAnyDamage);
+		OnTakePointDamage.AddDynamic(HealthComponent, &UHealthComponent::HandlePointDamage);
+		OnTakeRadialDamage.AddDynamic(HealthComponent, &UHealthComponent::HandleRadialDamage);
+		
+		HealthComponent->OnDeath.BindUObject(this, &AFpsPlayerCharacter::OnCharacterDied);
+	}
 }
 
 void AFpsPlayerCharacter::BeginPlay()
@@ -50,7 +68,7 @@ void AFpsPlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	// Настраиваем видимость мешей
-	UpdateMeshVisibility();
+	UpdateMeshVisibility(true);
 }
 
 void AFpsPlayerCharacter::PossessedBy(AController* NewController)
@@ -103,6 +121,16 @@ void AFpsPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	}
 }
 
+void AFpsPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (HealthComponent)
+	{
+		HealthComponent->OnDeath.Unbind();
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void AFpsPlayerCharacter::Move(const FInputActionValue& Value)
 {
 	const FVector2D MovementVector = Value.Get<FVector2D>();
@@ -147,18 +175,54 @@ void AFpsPlayerCharacter::ToggleCrouch()
 	}
 }
 
-void AFpsPlayerCharacter::UpdateMeshVisibility()
+void AFpsPlayerCharacter::UpdateMeshVisibility(const bool bAlive)
 {
 	if (IsLocallyControlled())
 	{
-		// Для локального игрока показываем только руки
-		FirstPersonMesh->SetVisibility(true, true);
-		ThirdPersonMesh->SetVisibility(false, true);
+		FirstPersonMesh->SetOnlyOwnerSee(bAlive);
+		FirstPersonMesh->SetVisibility(bAlive);
+	
+		ThirdPersonMesh->SetOwnerNoSee(bAlive);
+		ThirdPersonMesh->SetVisibility(!bAlive);
 	}
 	else
 	{
-		// Для других игроков показываем только тело
-		FirstPersonMesh->SetVisibility(false, true);
-		ThirdPersonMesh->SetVisibility(true, true);
+		FirstPersonMesh->SetVisibility(false);
+		ThirdPersonMesh->SetVisibility(true);
 	}
+}
+
+void AFpsPlayerCharacter::OnCharacterDied()
+{
+	// Останавливаем движение
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->DisableMovement();
+
+	// Multicast Может вызывать только сервер
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		Multicast_PlayDeathEffects();
+	}
+	
+	// Выключаем контроллер
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC)
+	{
+		PC->SetCinematicMode(true, false, true, true, true);
+	}
+}
+
+void AFpsPlayerCharacter::Multicast_PlayDeathEffects_Implementation()
+{
+	UpdateMeshVisibility(false);
+	
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetAllBodiesSimulatePhysics(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+
+	// Можно проиграть анимацию смерти, звук, камеру и т.д.
+	//UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
 }

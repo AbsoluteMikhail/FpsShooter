@@ -6,6 +6,7 @@
 #include "Gameframework/Character.h"
 #include "FpsPlayerCharacter.generated.h"
 
+class UHealthComponent;
 class USkeletalMeshComponent;
 class UCameraComponent;
 class UInputMappingContext;
@@ -27,31 +28,25 @@ public:
 	FORCEINLINE UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 protected:
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void NotifyControllerChanged() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	/** Контекст ввода */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings | Input")
 	UInputMappingContext* DefaultMappingContext;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings | Input")
 	UInputAction* MoveAction;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings | Input")
 	UInputAction* LookAction;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings | Input")
 	UInputAction* JumpAction;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings | Input")
 	UInputAction* CrouchAction;
-
-	/** Флаг приседания (реплицируется) */
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Movement")
-	bool bIsCrouch;
 	
 	/** Обработка движения */
 	void Move(const FInputActionValue& Value);
@@ -64,7 +59,9 @@ protected:
 	/** Обработка приседания */
 	void ToggleCrouch();
 	/** Настройка видимости мешей в зависимости от перспективы */
-	void UpdateMeshVisibility();
+	void UpdateMeshVisibility(const bool bAlive);
+	UFUNCTION(meta = (ToolTip = "Реакция на смерть"))
+	void OnCharacterDied();
 	
 private:
 	/** Персона компонента камеры */
@@ -79,4 +76,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* ThirdPersonMesh;
 
+	// Свой компонент здоровья
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UHealthComponent* HealthComponent;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayDeathEffects();
 };
