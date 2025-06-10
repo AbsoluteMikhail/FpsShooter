@@ -99,14 +99,14 @@ void UHealthComponent::SetCurrentHealth(const float NewHealth)
 
 	if (GetOwner()->HasAuthority())
 	{
-		const float Delta = CurrentHealth - NewHealth;
+		const float Delta = NewHealth - CurrentHealth;
 		if (FMath::Abs(Delta) > KINDA_SMALL_NUMBER) // Игнорируем микроизменения
 		{
 			CurrentHealth = NewHealth;
 			OnHealthChanged.Broadcast(CurrentHealth, Delta);
 		}
     
-		if (CurrentHealth <= 0.0f)
+		if (CurrentHealth <= 0.0f && !bIsDead)
 		{
 			bIsDead = true;
 			(void)OnDeath.ExecuteIfBound();
@@ -121,7 +121,7 @@ void UHealthComponent::OnRep_CurrentHealth()
 		return; // Изменений нет или они слишком малы
 	}
 	
-	const float Delta = LastServerHealth - CurrentHealth;
+	const float Delta = CurrentHealth - LastServerHealth;
 	OnHealthChanged.Broadcast(CurrentHealth, Delta);
 	LastServerHealth = CurrentHealth;
 	

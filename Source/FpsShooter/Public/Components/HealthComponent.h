@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "HealthComponent.generated.h"
 
+// @param Health - текущее значение здоровья
+// @param AmountChange - изменение здоровья (положительное - лечение, отрицательное - урон)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChangedSignature, float, Health, float, AmountChange);
 DECLARE_DELEGATE(FOnDeathSignature); // Только один подписчик
 
@@ -71,6 +73,7 @@ private:
 	// Флаг смерти
 	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
 	bool bIsDead = false;
+	
 	// Хранит предыдущее значение здоровья после последней репликации, чтобы рассчитать дельту
 	float LastServerHealth = 100.0f;
 
