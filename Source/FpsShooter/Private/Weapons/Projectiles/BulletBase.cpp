@@ -20,7 +20,7 @@ ABulletBase::ABulletBase()
 	SetRootComponent(CollisionSphere);
 	CollisionSphere->InitSphereRadius(10.0f);
 	CollisionSphere->BodyInstance.SetCollisionProfileName("Projectile");
-	CollisionSphere->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
+	CollisionSphere->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.0f));
 	CollisionSphere->CanCharacterStepUpOn = ECB_No;
 
 	// компонент ProjectileMovementComponent для управления движением этого снаряда
